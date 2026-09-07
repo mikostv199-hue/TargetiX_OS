@@ -74,8 +74,16 @@
       font-weight: 600;
       color: #4a5568;
     }
-    select {
-      width: 100%;
+
+    /* Кастомний випадаючий список */
+    .custom-select {
+      position: relative;
+      user-select: none;
+    }
+    .select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 12px 16px;
       background-color: #f8fafc;
       color: #1a202c;
@@ -83,13 +91,64 @@
       border-radius: 10px;
       font-size: 0.95rem;
       font-weight: 500;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-    select:focus {
+    .select-trigger:hover {
+      border-color: #cbd5e0;
+    }
+    .custom-select.open .select-trigger {
       border-color: #0066ff;
       box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+      background-color: #ffffff;
     }
+    .arrow {
+      width: 16px;
+      height: 16px;
+      stroke: #718096;
+      stroke-width: 2;
+      fill: none;
+      transition: transform 0.2s ease;
+    }
+    .custom-select.open .arrow {
+      transform: rotate(180deg);
+      stroke: #0066ff;
+    }
+    .select-options {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+      z-index: 10;
+      display: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .custom-select.open .select-options {
+      display: block;
+    }
+    .option {
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #2d3748;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    .option:hover {
+      background-color: #f0f7ff;
+      color: #0066ff;
+    }
+    .option.selected {
+      background-color: #e6f0ff;
+      color: #0066ff;
+      font-weight: 600;
+    }
+
     /* Блок з попередженням */
     .alert-box {
       background-color: #fffaf0;
@@ -113,6 +172,7 @@
       line-height: 1.4;
       font-weight: 500;
     }
+
     button {
       background-color: #0066ff;
       color: #ffffff;
@@ -159,17 +219,33 @@
     </div>
 
     <h1>TargetiX Web Tool</h1>
-    <p>Підключіть пристрій через USB та перевірте вибрану модель.</p>
+    <p>Підключіть пристрій через USB та перевірте обрані параметри.</p>
 
-    <!-- Вибір номера тренажера -->
+    <!-- Кастомний список: Номер тренажера -->
     <div class="field">
-      <label for="device-select">Номер та модель тренажера</label>
-      <select id="device-select">
-        <option value="">Завантаження даних...</option>
-      </select>
+      <label>Номер тренажера</label>
+      <div class="custom-select" id="device-select">
+        <div class="select-trigger">
+          <span class="selected-text">Завантаження...</span>
+          <svg class="arrow" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="select-options"></div>
+      </div>
     </div>
 
-    <!-- Попередження щодо вибору -->
+    <!-- Кастомний список: Версія -->
+    <div class="field">
+      <label>Версія програмного забезпечення</label>
+      <div class="custom-select" id="version-select">
+        <div class="select-trigger">
+          <span class="selected-text">Завантаження...</span>
+          <svg class="arrow" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="select-options"></div>
+      </div>
+    </div>
+
+    <!-- Попередження -->
     <div class="alert-box">
       <div class="alert-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -179,7 +255,7 @@
         </svg>
       </div>
       <div class="alert-text">
-        Будьте уважні! Переконайтеся, що ви підключаєте саме тренажер TargetiX SL7.
+        Будьте уважні! Обирайте та встановлюйте програму акуратно відповідно до вашого тренажера.
       </div>
     </div>
 
@@ -196,39 +272,95 @@
   </div>
 
   <script>
-    const selectEl = document.getElementById('device-select');
+    let dbData = [];
+    let selectedDeviceIndex = 0;
+
+    const deviceSelect = document.getElementById('device-select');
+    const versionSelect = document.getElementById('version-select');
     const installBtn = document.getElementById('install-btn');
 
-    // Завантаження списку з versions.json
-    fetch('./versions.json')
-      .then(response => {
-        if (!response.ok) throw new Error('Не вдалося завантажити конфігурацію');
-        return response.json();
-      })
-      .then(devices => {
-        selectEl.innerHTML = '';
-
-        devices.forEach((item) => {
-          const option = document.createElement('option');
-          option.value = item.manifest;
-          option.textContent = item.name || item.device;
-          selectEl.appendChild(option);
+    // Логіка відкриття/закриття кастомних списків
+    document.querySelectorAll('.custom-select').forEach(select => {
+      const trigger = select.querySelector('.select-trigger');
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.custom-select').forEach(s => {
+          if (s !== select) s.classList.remove('open');
         });
+        select.classList.toggle('open');
+      });
+    });
 
-        if (devices.length > 0) {
-          installBtn.setAttribute('manifest', devices[0].manifest);
-        }
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('open'));
+    });
+
+    // Завантаження даних з versions.json
+    fetch('./versions.json')
+      .then(res => {
+        if (!res.ok) throw new Error('Помилка завантаження');
+        return res.json();
       })
-      .catch(error => {
-        console.error('Помилка:', error);
-        selectEl.innerHTML = '<option value="">Помилка завантаження даних</option>';
+      .then(data => {
+        dbData = data;
+        renderDevices();
+      })
+      .catch(err => {
+        console.error(err);
+        deviceSelect.querySelector('.selected-text').textContent = 'Помилка';
+        versionSelect.querySelector('.selected-text').textContent = 'Помилка';
       });
 
-    selectEl.addEventListener('change', (e) => {
-      if (e.target.value) {
-        installBtn.setAttribute('manifest', e.target.value);
+    // Відображення списку тренажерів
+    function renderDevices() {
+      const optionsContainer = deviceSelect.querySelector('.select-options');
+      optionsContainer.innerHTML = '';
+
+      dbData.forEach((item, index) => {
+        const option = document.createElement('div');
+        option.className = `option ${index === 0 ? 'selected' : ''}`;
+        option.textContent = item.device_name || item.device_id;
+        option.addEventListener('click', () => {
+          selectedDeviceIndex = index;
+          deviceSelect.querySelector('.selected-text').textContent = item.device_name || item.device_id;
+          optionsContainer.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+          option.classList.add('selected');
+          renderVersions(index);
+        });
+        optionsContainer.appendChild(option);
+      });
+
+      if (dbData.length > 0) {
+        deviceSelect.querySelector('.selected-text').textContent = dbData[0].device_name || dbData[0].device_id;
+        renderVersions(0);
       }
-    });
+    }
+
+    // Відображення списку версій для обраного тренажера
+    function renderVersions(deviceIndex) {
+      const optionsContainer = versionSelect.querySelector('.select-options');
+      optionsContainer.innerHTML = '';
+
+      const versions = dbData[deviceIndex].versions || [];
+
+      versions.forEach((ver, index) => {
+        const option = document.createElement('div');
+        option.className = `option ${index === 0 ? 'selected' : ''}`;
+        option.textContent = ver.name;
+        option.addEventListener('click', () => {
+          versionSelect.querySelector('.selected-text').textContent = ver.name;
+          optionsContainer.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+          option.classList.add('selected');
+          installBtn.setAttribute('manifest', ver.manifest);
+        });
+        optionsContainer.appendChild(option);
+      });
+
+      if (versions.length > 0) {
+        versionSelect.querySelector('.selected-text').textContent = versions[0].name;
+        installBtn.setAttribute('manifest', versions[0].manifest);
+      }
+    }
   </script>
 
 </body>
