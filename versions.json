@@ -1,8 +1,9 @@
 [
   {
+    "device": "TargetiX_SL7",
     "version": "3.1.0",
-    "name": "TargetiX v3.1 (Стабільна)",
-    "summary": "Актуальна стабільна версія TargetiX",
+    "name": "v3.1 (Стабільна)",
+    "summary": "Програмне забезпечення для тренажера TargetiX SL7",
     "manifest": "./manifest.json"
   }
 ]
