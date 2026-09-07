@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TargetiX — Оновлення та Встановлення</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+      color: #2d3748;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: #ffffff;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 20px 48px rgba(0, 0, 0, 0.03);
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+    }
+    .logo-container {
+      margin-bottom: 1.25rem;
+    }
+    /* Стильний логотип TargetiX (SVG) — можна замінити на <img> */
+    .logo {
+      width: 64px;
+      height: 64px;
+      background: #0066ff;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(0, 102, 255, 0.25);
+    }
+    .logo svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #1a202c;
+      letter-spacing: -0.5px;
+    }
+    p {
+      color: #718096;
+      font-size: 0.95rem;
+      margin: 0 0 1.75rem 0;
+      line-height: 1.5;
+    }
+    .field {
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #4a5568;
+    }
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      background-color: #f8fafc;
+      color: #1a202c;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    select:focus {
+      border-color: #0066ff;
+      box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+    }
+    button {
+      background-color: #0066ff;
+      color: #ffffff;
+      border: none;
+      padding: 14px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    button:hover {
+      background-color: #0052cc;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    .warning {
+      color: #e53e3e;
+      font-size: 0.85rem;
+      margin-top: 15px;
+      display: block;
+    }
+  </style>
+  <script
+    type="module"
+    src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module">
+  </script>
+</head>
+<body>
+
+  <div class="card">
+    <!-- Логотип TargetiX -->
+    <div class="logo-container">
+      <div class="logo">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+      </div>
+    </div>
+
+    <h1>TargetiX Web Tool</h1>
+    <p>Підключіть пристрій через USB та виберіть версію для встановлення.</p>
+
+    <!-- Вибір версії -->
+    <div class="field">
+      <label for="version-select">Версія програмного забезпечення</label>
+      <select id="version-select">
+        <option value="">Завантаження версій...</option>
+      </select>
+    </div>
+
+    <!-- Кнопка прошивки -->
+    <esp-web-install-button id="install-btn">
+      <button slot="activate">Встановити на пристрій</button>
+      <span slot="unsupported" class="warning">
+        Ваш браузер не підтримує Web Serial API. Використовуйте Chrome або Edge.
+      </span>
+      <span slot="not-allowed" class="warning">
+        Робота можлива тільки через захищене з'єднання HTTPS.
+      </span>
+    </esp-web-install-button>
+  </div>
+
+  <script>
+    const selectEl = document.getElementById('version-select');
+    const installBtn = document.getElementById('install-btn');
+
+    // Завантаження версій
+    fetch('./versions.json')
+      .then(response => {
+        if (!response.ok) throw new Error('Не вдалося завантажити версії');
+        return response.json();
+      })
+      .then(versions => {
+        selectEl.innerHTML = '';
+
+        versions.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.manifest;
+          option.textContent = item.name || `Версія ${item.version}`;
+          selectEl.appendChild(option);
+        });
+
+        if (versions.length > 0) {
+          installBtn.setAttribute('manifest', versions[0].manifest);
+        }
+      })
+      .catch(error => {
+        console.error('Помилка:', error);
+        selectEl.innerHTML = '<option value="">Помилка завантаження версій</option>';
+      });
+
+    selectEl.addEventListener('change', (e) => {
+      if (e.target.value) {
+        installBtn.setAttribute('manifest', e.target.value);
+      }
+    });
+  </script>
+
+</body>
+</html>

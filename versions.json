@@ -1,0 +1,8 @@
+[
+  {
+    "version": "3.1.0",
+    "name": "TargetiX v3.1 (Стабільна)",
+    "summary": "Актуальна стабільна версія TargetiX",
+    "manifest": "./manifest.json"
+  }
+]
